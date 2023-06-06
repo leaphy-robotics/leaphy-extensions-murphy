@@ -26,6 +26,7 @@ public:
   void    reset();
 
 private:
+  uint8_t _otherAddress;
   uint8_t   _address;
   TwoWire*  _wire;
   uint8_t   _mask;          

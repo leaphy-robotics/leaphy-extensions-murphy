@@ -1,4 +1,5 @@
 #include "SCL_SDA_Splitter.h"
+#include "Wire.h"
 
 
 TCA9548::TCA9548(const uint8_t deviceAddress, TwoWire *wire)
@@ -9,6 +10,8 @@ TCA9548::TCA9548(const uint8_t deviceAddress, TwoWire *wire)
   _resetPin = -1;
   _forced   = false;
   _error    = TCA9548_OK;
+  _otherAddress = 0x00;
+
 }
 
 
@@ -17,6 +20,21 @@ bool TCA9548::begin(uint8_t mask)
   _wire->begin();
   if (! isConnected()) return false;
   setChannelMask(mask);
+  for (byte address = 1; address < 128; ++address) {
+    if (address == 70) {
+      continue;
+    }
+    // The i2c_scanner uses the return value of
+    // the Wire.endTransmission to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(address);
+    byte error = Wire.endTransmission();
+
+    if (error == 0) {
+      _otherAddress = address;
+      break;
+    }
+  }
   return true;
 }
 
@@ -60,7 +78,10 @@ bool TCA9548::disableChannel(uint8_t channel)
 
 bool TCA9548::selectChannel(uint8_t channel)
 {
-  if (channel > 7) return false;
+  if (channel > 8) return false;
+  if (channel == 8) {
+    setChannelMask(_otherAddress);
+    }
   setChannelMask(0x01 << channel);
   return true;
 }
